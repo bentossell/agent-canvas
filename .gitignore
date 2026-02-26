@@ -4,3 +4,4 @@ dist/
 *.gif
 *.mp4
 bun.lock
+.agent-canvas/

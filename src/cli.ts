@@ -2,6 +2,8 @@
 // cli.ts — start the agent-canvas server
 
 import { createApp, addWsClient, removeWsClient, type CanvasState } from './server'
+import { loadPanelsFromDisk, persistPanelsToDisk } from './state-store'
+import { join, resolve } from 'path'
 
 const args = process.argv.slice(2)
 const portIdx = args.indexOf('--port')
@@ -9,10 +11,17 @@ const httpPort = portIdx !== -1 ? parseInt(args[portIdx + 1], 10) : 3333
 const wsPort = httpPort + 1
 const noOpen = args.includes('--no-open')
 
+const cwd = process.cwd()
+const stateFilePath = resolve(join(cwd, '.agent-canvas', 'state.json'))
+const panels = await loadPanelsFromDisk(stateFilePath)
+if (!panels.has('default')) panels.set('default', '')
+await persistPanelsToDisk(stateFilePath, panels)
+
 const state: CanvasState = {
-	panels: new Map(),
+	panels,
 	wsPort,
-	cwd: process.cwd(),
+	cwd,
+	stateFilePath,
 }
 
 const app = createApp(state)
@@ -31,7 +40,7 @@ const wsHandler = {
 }
 
 // HTTP server with WebSocket upgrade on /ws
-const httpServer = Bun.serve({
+Bun.serve({
 	port: httpPort,
 	fetch(req, server) {
 		const url = new URL(req.url)
@@ -45,7 +54,7 @@ const httpServer = Bun.serve({
 })
 
 // Standalone WS server for local dev (direct port access)
-const wsServer = Bun.serve({
+Bun.serve({
 	port: wsPort,
 	fetch(req, server) {
 		if (server.upgrade(req)) return
@@ -59,6 +68,7 @@ console.log(`
 
   Canvas:  http://localhost:${httpPort}
   WS:      ws://localhost:${wsPort}
+  State:   ${stateFilePath}
 
   Usage:
     curl -X POST http://localhost:${httpPort}/render \\
@@ -70,7 +80,6 @@ console.log(`
 if (!noOpen) {
 	const { exec } = await import('child_process')
 	const url = `http://localhost:${httpPort}`
-	const cmd = process.platform === 'darwin' ? 'open' :
-		process.platform === 'win32' ? 'start' : 'xdg-open'
+	const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open'
 	exec(`${cmd} ${url}`)
 }
