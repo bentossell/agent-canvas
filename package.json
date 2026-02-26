@@ -1,0 +1,22 @@
+{
+  "name": "agent-canvas",
+  "version": "1.0.0",
+  "description": "Web-based agent canvas — agent POSTs HTML, canvas renders live",
+  "type": "module",
+  "bin": {
+    "agent-canvas": "./src/cli.ts"
+  },
+  "scripts": {
+    "start": "bun run src/cli.ts",
+    "dev": "bun run --watch src/cli.ts",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.7.0"
+  }
+}
